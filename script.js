@@ -1,96 +1,123 @@
 const form = document.querySelector("#login-form, #signup-form");
-const emailInput = document.querySelector("#email");
-const passwordInput = document.querySelector("#password");
-const passwordToggle = document.querySelector(".password-toggle");
-const status = document.querySelector("#status");
-const nameInput = document.querySelector("#name");
-const confirmInput = document.querySelector("#confirm");
-const termsInput = document.querySelector('input[name="terms"]');
 
-function setFieldError(input, message) {
-  const error = document.querySelector(`#${input.id}-error`);
-  input.classList.toggle("invalid", Boolean(message));
-  input.setAttribute("aria-invalid", String(Boolean(message)));
-  if (error) error.textContent = message;
-}
+if (form) {
+  const emailInput = document.querySelector("#email");
+  const passwordInput = document.querySelector("#password");
+  const passwordToggle = document.querySelector(".password-toggle");
+  const nameInput = document.querySelector("#name");
+  const confirmInput = document.querySelector("#confirm");
+  const termsInput = document.querySelector('input[name="terms"]');
+  const statusMessage = document.querySelector("#status");
+  const submitButton = form.querySelector(".btn");
+  const submitLabel = submitButton.querySelector("span");
+  const isSignup = form.id === "signup-form";
 
-function validateField(input) {
-  const value = input.value.trim();
-  let message = "";
+  function setFieldError(input, message) {
+    const errorMessage = document.querySelector(`#${input.id}-error`);
 
-  if (!value) {
-    message = "Šis lauks ir obligāts.";
-  } else if (input === emailInput && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-    message = "Ievadiet derīgu e-pasta adresi.";
-  } else if (input === passwordInput && value.length < 6) {
-    message = "Parole jābūt 6 rakstzīmēm.";
-  } else if (input === confirmInput && value !== passwordInput.value) {
-    message = "Parole neapstiprinās.";
+    input.classList.toggle("invalid", Boolean(message));
+    input.setAttribute("aria-invalid", String(Boolean(message)));
+
+    if (errorMessage) {
+      errorMessage.textContent = message;
+    }
   }
 
-  setFieldError(input, message);
-  return !message;
-}
+  function validateField(input) {
+    const value = input.value.trim();
+    let message = "";
 
-[...form.querySelectorAll("input:not([type='checkbox'])")].forEach(input => {
-  input.addEventListener("blur", () => validateField(input));
-  input.addEventListener("input", () => {
-    if (input.classList.contains("invalid")) validateField(input);
-  });
-});
+    if (!value) {
+      message = "Šis lauks ir jāaizpilda.";
+    } else if (input === emailInput && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      message = "Ievadi derīgu e-pasta adresi.";
+    } else if (input === passwordInput && value.length < 6) {
+      message = "Parolei jābūt vismaz 6 rakstzīmes garai.";
+    } else if (input === confirmInput && value !== passwordInput.value) {
+      message = "Paroles nesakrīt.";
+    }
 
-if (passwordToggle) {
-  passwordToggle.addEventListener("click", () => {
+    setFieldError(input, message);
+    return message === "";
+  }
+
+  function validateForm() {
+    const requiredInputs = [nameInput, emailInput, passwordInput].filter(Boolean);
+    const requiredFieldsAreValid = requiredInputs.map(validateField).every(Boolean);
+    const confirmationIsValid = !confirmInput || validateField(confirmInput);
+    const termsAreValid = !termsInput || termsInput.checked;
+
+    if (requiredFieldsAreValid && confirmationIsValid && termsAreValid) {
+      return true;
+    }
+
+    statusMessage.textContent = "Pārbaudi laukus, kas atzīmēti ar kļūdu.";
+    statusMessage.style.color = "var(--danger)";
+    (form.querySelector(".invalid") || emailInput || passwordInput).focus();
+    return false;
+  }
+
+  function handlePasswordToggle() {
     const isVisible = passwordInput.type === "text";
+
     passwordInput.type = isVisible ? "password" : "text";
     passwordToggle.classList.toggle("visible", !isVisible);
     passwordToggle.setAttribute("aria-pressed", String(!isVisible));
-    passwordToggle.setAttribute("aria-label", isVisible ? "Rādīt paroli" : "Paslēpt paroli");
+    passwordToggle.setAttribute("aria-label", isVisible ? "Rādīt paroli" : "Slēpt paroli");
     passwordInput.focus();
-  });
-}
-
-form.addEventListener("submit", event => {
-  event.preventDefault();
-  const fields = [nameInput, emailInput, passwordInput].filter(Boolean);
-  const validFields = fields.map(validateField).every(Boolean);
-  const confirmationIsValid = !confirmInput || validateField(confirmInput);
-  const termsAreValid = !termsInput || termsInput.checked;
-
-  if (!validFields || !confirmationIsValid || !termsAreValid) {
-    status.textContent = "Pārbaudiet iezīmētās vērtības.";
-    status.style.color = "var(--danger)";
-    (form.querySelector(".invalid") || emailInput || passwordInput).focus();
-    return;
   }
 
-  const submitButton = form.querySelector(".btn");
-  const isSignup = form.id === "signup-form";
-  submitButton.disabled = true;
-  submitButton.querySelector("span").textContent = isSignup ? "Izveidot kontu…" : "Ielogoties…";
-  status.textContent = "";
+  async function handleSubmit(event) {
+    event.preventDefault();
 
-  const endpoint = isSignup ? "signup.php" : "login.php";
+    if (!validateForm()) {
+      return;
+    }
 
-  fetch(endpoint, { method: "POST", body: new FormData(form) })
-    .then(res => res.json().then(data => ({ ok: res.ok, data })))
-    .then(({ ok, data }) => {
-      status.textContent = data.message;
-      status.style.color = ok ? "var(--green)" : "var(--danger)";
-      if (ok && isSignup) {
+    submitButton.disabled = true;
+    submitLabel.textContent = isSignup
+      ? "Notiek konta izveide…"
+      : "Notiek pierakstīšanās…";
+    statusMessage.textContent = "";
+
+    const endpoint = isSignup ? "signup.php" : "login.php";
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        body: new FormData(form),
+      });
+      const data = await response.json();
+
+      statusMessage.textContent = data.message;
+      statusMessage.style.color = response.ok ? "var(--green)" : "var(--danger)";
+
+      if (response.ok && isSignup) {
         window.setTimeout(() => window.location.replace("index.html"), 1000);
-        return;
-      }
-      if (ok && !isSignup) {
+      } else if (response.ok) {
         window.location.replace("dashboard.php");
       }
-    })
-    .catch(() => {
-      status.textContent = "Servera kļūda. Mēģini vēlāk.";
-      status.style.color = "var(--danger)";
-    })
-    .finally(() => {
+    } catch {
+      statusMessage.textContent = "Radās servera kļūda. Mēģini vēlreiz vēlāk.";
+      statusMessage.style.color = "var(--danger)";
+    } finally {
       submitButton.disabled = false;
-      submitButton.querySelector("span").textContent = isSignup ? "Izveidot kontu" : "Ielogoties";
+      submitLabel.textContent = isSignup ? "Izveidot kontu" : "Pierakstīties";
+    }
+  }
+
+  form.querySelectorAll("input:not([type='checkbox'])").forEach(input => {
+    input.addEventListener("blur", () => validateField(input));
+    input.addEventListener("input", () => {
+      if (input.classList.contains("invalid")) {
+        validateField(input);
+      }
     });
-});
+  });
+
+  if (passwordToggle) {
+    passwordToggle.addEventListener("click", handlePasswordToggle);
+  }
+
+  form.addEventListener("submit", handleSubmit);
+}

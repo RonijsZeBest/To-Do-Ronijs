@@ -20,7 +20,7 @@ function readUsers(): array
 
     $contents = file_get_contents($path);
     if ($contents === false) {
-        fail('Unable to read account data.', 500);
+        fail('Neizdevās nolasīt konta datus.', 500);
     }
 
     $users = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
@@ -32,7 +32,7 @@ try {
     $password = (string) ($_POST['password'] ?? '');
 
     if ($email === false || $password === '') {
-        fail('Ievadiet derīgu e-pasta adresi un paroli.');
+        fail('Ievadi derīgu e-pasta adresi un paroli.');
     }
 
     $users = readUsers();
@@ -40,17 +40,17 @@ try {
     $user = $users[$normalizedEmail] ?? null;
 
     if ($user === null || !is_string($user['password_hash'] ?? null) || !password_verify($password, $user['password_hash'])) {
-        fail('Nepareiza e-pasta adrese vai parole.', 401);
+        fail('E-pasta adrese vai parole nav pareiza.', 401);
     }
 
     session_start();
     session_regenerate_id(true);
     $_SESSION['user'] = [
         'email' => $normalizedEmail,
-        'name' => (string) ($user['name'] ?? 'Daily lietotājs'),
+        'name' => (string) ($user['name'] ?? 'To-Do lietotājs'),
     ];
 
-    echo json_encode(['message' => 'Ielogojies sekundi.'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['message' => 'Pierakstīšanās izdevās.'], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $exception) {
-    fail('Serveris nevarēja apstrādāt jūsu pieprasijumu.', 500);
+    fail('Serverim neizdevās apstrādāt pieprasījumu.', 500);
 }
