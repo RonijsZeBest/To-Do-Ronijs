@@ -1,0 +1,12 @@
+{
+    "es@gmail.com": {
+        "name": "Ronijs",
+        "password_hash": "$2y$10$bOpcvUuRCFWZPhHJZdG\/leRQ0rLUlBs4W8NDHXohLITvz4UVDvOYq",
+        "created_at": "2026-10-07T12:14:01+02:00"
+    },
+    "tu@gmail.com": {
+        "name": "kristers",
+        "password_hash": "$2y$10$RT.rpBBTAdxyxhtutfyUzOBkCUr\/GZTYM0p8qmHj0xdd\/1ikarSea",
+        "created_at": "2026-10-13T10:55:40+02:00"
+    }
+}

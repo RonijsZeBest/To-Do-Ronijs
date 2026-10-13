@@ -10,6 +10,7 @@ if (empty($_SESSION['user'])) {
 }
 
 $user = $_SESSION['user'];
+$_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 ?>
 <!DOCTYPE html>
 <html lang="lv">
@@ -34,6 +35,10 @@ $user = $_SESSION['user'];
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 3v4M16 3v4M4 9h16"/></svg>
           Mani uzdevumi
         </a>
+        <a class="nav-item" href="share.php">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4"/></svg>
+          Koplietot sarakstu
+        </a>
         <a class="nav-item" href="logout.php">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"/></svg>
           Izrakstīties
@@ -44,12 +49,56 @@ $user = $_SESSION['user'];
 
     <main class="main-content">
       <header class="topbar">
-        <button class="profile" type="button" aria-label="Lietotāja profils">
-          <span><?= htmlspecialchars(strtoupper(substr($user['name'], 0, 1)), ENT_QUOTES, 'UTF-8') ?></span>
-        </button>
+        <div class="account-menu">
+          <button
+            id="profile-button"
+            class="profile"
+            type="button"
+            aria-label="Lietotāja profils"
+            aria-expanded="false"
+            aria-controls="profile-options"
+          >
+            <span><?= htmlspecialchars(strtoupper(substr($user['name'], 0, 1)), ENT_QUOTES, 'UTF-8') ?></span>
+          </button>
+          <div id="profile-options" class="profile-options" hidden>
+            <button
+              id="delete-account-button"
+              class="delete-account-button"
+              type="button"
+              data-csrf-token="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>"
+            >
+              Dzēst kontu
+            </button>
+          </div>
+        </div>
       </header>
 
       <section class="task-section" aria-labelledby="tasks-heading">
+        <div class="task-list-controls">
+          <div class="task-list-picker">
+            <label for="task-list-select">Uzdevumu saraksts</label>
+            <select id="task-list-select" aria-label="Izvēlies uzdevumu sarakstu">
+              <option value="<?= htmlspecialchars(strtolower($user['email']), ENT_QUOTES, 'UTF-8') ?>">Mans saraksts</option>
+            </select>
+          </div>
+          <button id="create-list-button" class="create-list-button" type="button">
+            + Jauns saraksts
+          </button>
+        </div>
+
+        <dialog id="create-list-dialog" class="create-list-dialog">
+          <form id="create-list-form">
+            <h2>Izveidot uzdevumu sarakstu</h2>
+            <p class="sharing-hint">Šis saraksts būs redzams tikai tev.</p>
+            <label for="new-list-name">Saraksta nosaukums</label>
+            <input id="new-list-name" name="name" type="text" maxlength="80" required>
+            <div class="dialog-actions">
+              <button id="cancel-create-list" class="dialog-cancel" type="button">Atcelt</button>
+              <button class="add-button" type="submit">Izveidot</button>
+            </div>
+          </form>
+        </dialog>
+
         <div class="section-heading">
           <div>
             <h2 id="tasks-heading">Mani uzdevumi</h2>
@@ -104,10 +153,16 @@ $user = $_SESSION['user'];
       <td><span class="task-assignee"></span></td>
       <td><time class="task-date"></time></td>
       <td><span class="task-priority"></span></td>
-      <td><button class="task-check" type="button" aria-label="Atzīmēt uzdevumu kā pabeigtu"></button><button class="task-delete" type="button" aria-label="Dzēst uzdevumu">×</button></td>
+      <td>
+        <button class="task-check" type="button" aria-label="Atzīmēt uzdevumu kā pabeigtu"></button>
+        <button class="task-edit" type="button" aria-label="Rediģēt uzdevumu">Rediģēt</button>
+        <button class="task-save" type="button" hidden>Saglabāt</button>
+        <button class="task-cancel" type="button" hidden>Atcelt</button>
+        <button class="task-delete" type="button" aria-label="Dzēst uzdevumu">×</button>
+      </td>
     </tr>
   </template>
 
-  <script src="dashboard.js?v=6"></script>
+  <script src="dashboard.js?v=8"></script>
 </body>
 </html>
